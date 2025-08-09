@@ -14,7 +14,7 @@
       "run_at": "document_idle"
     }
   ],
-  "background": { "service_worker": "service_worker.js" },
+  "background": { "service_worker": "service_worker.js", "type": "module" },
   "web_accessible_resources": [
     {
       "resources": ["dict/en_es.json"],
