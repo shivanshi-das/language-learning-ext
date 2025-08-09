@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Language Immersion</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>Immersion</h1>
+
+    <label>
+      Replacement %
+      <input id="pct" type="range" min="0" max="50" step="1">
+      <span id="pctVal"></span>
+    </label>
+
+    <label>
+      Target language
+      <select id="lang">
+        <option value="es">Spanish</option>
+        <!-- add more later -->
+      </select>
+    </label>
+
+    <button id="save">Save</button>
+    <script src="popup.js"></script>
+  </body>
+</html>
