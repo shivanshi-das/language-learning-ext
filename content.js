@@ -1,7 +1,6 @@
 // Minimal MVP: random replacement using local dictionary
 // This script runs on every page to replace words with their translations
 
-let DICT = null;
 let SETTINGS = { replacePct: 100, targetLang: "es" };
 
 // load settings + dictionary once per page
@@ -10,11 +9,11 @@ let SETTINGS = { replacePct: 100, targetLang: "es" };
     SETTINGS = { ...SETTINGS, ...s };
     DICT = await fetch(chrome.runtime.getURL("dict/en_es.json")).then(r => r.json());
     ensureTooltip();
-    replaceInPage(); // document.body is default root
-    const observer = new MutationObserver((mutationsList) => {
+    await replaceInPage(); // document.body is default root
+    const observer = new MutationObserver(async (mutationsList) => {
         for (const mutation of mutationsList) {
             if (mutation.type === "childList" && (mutation.addedNodes.length > 0)) {
-                replaceInPage();
+                await replaceInPage();
                 break; // Only need to run once per batch
             }
         }
@@ -51,7 +50,7 @@ function hideTooltip() {
     t.style.display = "none";
 }
 
-function replaceInPage(root = document.body) {
+async function replaceInPage(root = document.body) {
     const walker = document.createTreeWalker(
         root,
         NodeFilter.SHOW_TEXT,
@@ -61,6 +60,7 @@ function replaceInPage(root = document.body) {
                 if (!node.nodeValue || !node.nodeValue.trim()) {
                     return NodeFilter.FILTER_REJECT;
                 }
+                
                 // if node has no element parent, reject (not rendered on pg)
                 const p = node.parentElement;
                 if (!p) return NodeFilter.FILTER_REJECT;
@@ -83,12 +83,13 @@ function replaceInPage(root = document.body) {
         for (let i = 0; i < tokens.length; i++) {
             const tok = tokens[i];
             if (!/\w+/.test(tok)) continue;
+            if (tok.toLowerCase() !== "cat") continue;
 
             // probability gate
             if (Math.random() * 100 > SETTINGS.replacePct) continue;
 
             const lower = tok.toLowerCase();
-            const translated = DICT[lower];
+            const translated = await translateViaSW(lower, "en", "es");
             if (!translated) continue;
 
             // preserve capitalization for first letter
@@ -137,3 +138,13 @@ function escapeHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+
+function translateViaSW(text, from="auto", to="es"){
+  return new Promise((resolve)=>{
+    chrome.runtime.sendMessage({type:"TRANSLATE", text, from, to}, (resp)=>{
+      if (chrome.runtime.lastError) return resolve(null);
+      resolve(resp?.ok ? resp.translation : null);
+    });
+  });
+}
+
